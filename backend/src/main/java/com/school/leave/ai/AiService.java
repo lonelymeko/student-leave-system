@@ -10,7 +10,10 @@ import com.school.leave.user.SysUser;
 import com.school.leave.user.SysUserMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -26,7 +29,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Spring AI (Anthropic claude-opus-4-8) 三能力：智能填单 / 审批建议 / 制度问答。
+ * Spring AI 三能力（供应商优先级：OpenAI → Anthropic，均可自定义 base-url/model）：智能填单 / 审批建议 / 制度问答。
  * 未配置 Key 或调用异常 → 统一 5001 优雅降级，不影响主流程。
  */
 @Slf4j
@@ -49,26 +52,59 @@ public class AiService {
             8. 请假离校期间须保持通讯畅通，如实填写目的地和联系电话。
             """;
 
-    private final ObjectProvider<ChatClient.Builder> chatClientBuilder;
+    private final ObjectProvider<OpenAiChatModel> openAiChatModel;
+    private final ObjectProvider<AnthropicChatModel> anthropicChatModel;
     private final LeaveMapper leaveMapper;
     private final SysUserMapper userMapper;
     private final ObjectMapper objectMapper;
 
+    @Value("${spring.ai.openai.api-key:}")
+    private String openAiKey;
+
     @Value("${spring.ai.anthropic.api-key:}")
-    private String apiKey;
+    private String anthropicKey;
+
+    /** openai | anthropic | auto（auto = 优先 OpenAI，其次 Anthropic） */
+    @Value("${app.ai.provider:auto}")
+    private String provider;
 
     private volatile ChatClient client;
 
+    private static boolean realKey(String key) {
+        return StringUtils.hasText(key) && !"sk-placeholder".equals(key.trim());
+    }
+
+    private boolean openAiReady() {
+        return realKey(openAiKey) && openAiChatModel.getIfAvailable() != null;
+    }
+
+    private boolean anthropicReady() {
+        return realKey(anthropicKey) && anthropicChatModel.getIfAvailable() != null;
+    }
+
+    /** 按供应商配置选择 ChatModel：显式指定 > auto（OpenAI 优先，回退 Anthropic） */
+    private ChatModel selectModel() {
+        return switch (provider == null ? "auto" : provider.trim().toLowerCase()) {
+            case "openai" -> openAiReady() ? openAiChatModel.getIfAvailable() : null;
+            case "anthropic" -> anthropicReady() ? anthropicChatModel.getIfAvailable() : null;
+            default -> openAiReady() ? openAiChatModel.getIfAvailable()
+                    : (anthropicReady() ? anthropicChatModel.getIfAvailable() : null);
+        };
+    }
+
     private boolean available() {
-        return StringUtils.hasText(apiKey)
-                && !"sk-placeholder".equals(apiKey.trim())
-                && chatClientBuilder.getIfAvailable() != null;
+        return selectModel() != null;
     }
 
     private ChatClient client() {
         if (client == null) {
             synchronized (this) {
-                if (client == null) client = chatClientBuilder.getObject().build();
+                if (client == null) {
+                    ChatModel model = selectModel();
+                    if (model == null) throw BizException.aiUnavailable();
+                    log.info("AI provider selected: {}", model.getClass().getSimpleName());
+                    client = ChatClient.builder(model).build();
+                }
             }
         }
         return client;

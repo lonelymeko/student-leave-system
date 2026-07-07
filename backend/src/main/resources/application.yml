@@ -12,12 +12,25 @@ spring:
     password: leave123
     driver-class-name: com.mysql.cj.jdbc.Driver
   ai:
-    anthropic:
-      api-key: ${ANTHROPIC_API_KEY:sk-placeholder}
+    # 供应商选择：openai | anthropic | auto（auto=优先 OpenAI，无 Key 再回退 Anthropic）
+    openai:
+      api-key: ${OPENAI_API_KEY:sk-placeholder}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com}   # 任意 OpenAI 兼容网关（DeepSeek/通义/one-api 等）
       chat:
         options:
-          model: claude-opus-4-8
+          model: ${OPENAI_MODEL:gpt-4o}
           max-tokens: 1024
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:sk-placeholder}
+      base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
+      chat:
+        options:
+          model: ${ANTHROPIC_MODEL:claude-opus-4-8}
+          max-tokens: 1024
+
+app:
+  ai:
+    provider: ${AI_PROVIDER:auto}
 
 mybatis-plus:
   configuration:

@@ -6,11 +6,11 @@
 
 - **三角色权限体系**：学生（STUDENT）/ 辅导员（TEACHER）/ 管理员（ADMIN），JWT 无状态认证 + `@RequireRole` 注解式角色鉴权 + 数据范围越权校验三道防线
 - **六状态请销假状态机**：`PENDING 待审批 → APPROVED 请假中 → CANCEL_PENDING 销假待确认 → COMPLETED 已完成`，支持 `REJECTED 已驳回`、`REVOKED 已撤回` 两个分支终态；所有状态流转写入 `approval_record` 审计表，详情页展示完整时间线
-- **Spring AI 三能力**（Anthropic `claude-opus-4-8`，通过 `spring-ai-starter-model-anthropic` 接入）：
+- **Spring AI 三能力**（双供应商：**优先 OpenAI、回退 Anthropic**，model 与 endpoint 均可环境变量自定义，兼容 DeepSeek/通义等 OpenAI 协议网关）：
   - **AI 智能填单**：学生输入一句自然语言（如"我下周一到周三回家参加表哥婚礼"），自动生成结构化请假单草稿（类型/起止时间/事由/目的地）
   - **AI 审批建议**：结合该生近半年请假次数、累计天数、驳回次数，为辅导员生成风险等级（LOW/MEDIUM/HIGH）与一句话审批建议
   - **AI 制度问答**：右下角浮窗助手，基于内置《学生请销假管理规定》回答制度问题
-  - **无 Key 优雅降级**：未配置 `ANTHROPIC_API_KEY` 时 AI 接口统一返回 `code=5001`，前端提示但不阻断人工流程
+  - **无 Key 优雅降级**：`OPENAI_API_KEY` / `ANTHROPIC_API_KEY` 均未配置时 AI 接口统一返回 `code=5001`，前端提示但不阻断人工流程；出站请求带 5s 连接 / 60s 读超时，endpoint 不可达也不会挂起
 - **Apple HIG 风格 UI**：CSS 设计令牌（Design Token）体系、毛玻璃卡片（`backdrop-filter`）、iOS 风胶囊按钮 / 状态徽章 / 分段控件、内联 SVG 图标组件（无 emoji、无第三方 UI 库）
 - **管理端统计看板**：数字卡片 + ECharts 按需引入（类型分布环形图、近 6 个月趋势折线图）
 - **辅导员数据隔离**：每个学生绑定一名辅导员（`sys_user.teacher_id`），辅导员只能看到/处理自己名下学生的请假单
@@ -34,7 +34,7 @@
 | Spring Boot (spring-boot-starter-web) | 3.4.7 | Web 框架，Java 17 |
 | MyBatis-Plus (mybatis-plus-spring-boot3-starter) | 3.5.9 | ORM、条件构造器、分页 |
 | mybatis-plus-jsqlparser | 3.5.9 | 3.5.9+ 分页插件所需 SQL 解析器 |
-| Spring AI (spring-ai-starter-model-anthropic) | 1.0.0 | ChatClient 调用 Anthropic 模型 |
+| Spring AI (spring-ai-starter-model-openai / -anthropic) | 1.0.0 | ChatClient 双供应商接入（OpenAI 优先，Anthropic 回退） |
 | jjwt (api / impl / jackson) | 0.12.6 | JWT 签发与校验 |
 | spring-security-crypto | 随 Boot 3.4.7 管理 | 仅用 BCrypt 密码哈希，不引入完整 Spring Security |
 | mysql-connector-j | 随 Boot 3.4.7 管理 | MySQL 8 驱动 |
@@ -84,9 +84,21 @@ FLUSH PRIVILEGES;
 ```bash
 cd backend
 
-# 可选：配置 Anthropic API Key 以启用 AI 能力
-# 不配置也能正常运行，AI 接口会降级返回 code=5001，人工流程不受影响
+# 可选：配置 AI 供应商以启用 AI 能力（不配置也能正常运行，AI 接口降级返回 code=5001）
+# 供应商优先级：默认 auto = 优先 OpenAI，未配 OpenAI Key 再回退 Anthropic
+
+# 方式一：OpenAI（或任意 OpenAI 兼容网关：DeepSeek / 通义 / one-api 等）
+export OPENAI_API_KEY=sk-xxx
+export OPENAI_BASE_URL=https://api.deepseek.com   # 可选，默认 https://api.openai.com
+export OPENAI_MODEL=deepseek-chat                 # 可选，默认 gpt-4o
+
+# 方式二：Anthropic
 export ANTHROPIC_API_KEY=sk-ant-xxx
+export ANTHROPIC_BASE_URL=https://api.anthropic.com  # 可选
+export ANTHROPIC_MODEL=claude-opus-4-8               # 可选
+
+# 可选：强制指定供应商
+export AI_PROVIDER=auto   # auto | openai | anthropic
 
 mvn spring-boot:run
 # 或打包运行

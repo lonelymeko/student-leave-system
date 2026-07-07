@@ -1,0 +1,21 @@
+# 依赖与构建产物
+node_modules/
+dist/
+target/
+
+# 日志
+*.log
+nohup.out
+
+# IDE / 系统文件
+.idea/
+.vscode/
+.DS_Store
+
+# 内部资料（不入库）
+**/paper/
+paper-skills/
+template.doc*
+
+# 打包中间产物
+*.jar.original

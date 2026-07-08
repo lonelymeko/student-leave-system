@@ -17,4 +17,5 @@ public class BizException extends RuntimeException {
     public static BizException forbidden(String msg) { return new BizException(403, msg); }
     public static BizException badState(String msg) { return new BizException(4009, msg); }
     public static BizException aiUnavailable() { return new BizException(5001, "AI服务暂不可用"); }
+    public static BizException wxUnavailable(String msg) { return new BizException(5002, msg); }
 }

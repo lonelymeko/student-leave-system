@@ -1,0 +1,28 @@
+{
+    "name" : "学生请销假系统",
+    "appid" : "",
+    "description" : "学生请销假系统微信小程序（学生端 + 辅导员端 + AI 助手）",
+    "versionName" : "1.0.0",
+    "versionCode" : "100",
+    "transformPx" : false,
+    "h5" : {
+        "title" : "学生请销假系统",
+        "router" : {
+            "mode" : "hash"
+        }
+    },
+    "mp-weixin" : {
+        "appid" : "wx834c2ffab39abde5",
+        "setting" : {
+            "urlCheck" : false,
+            "es6" : true,
+            "minified" : true
+        },
+        "usingComponents" : true,
+        "lazyCodeLoading" : "requiredComponents"
+    },
+    "uniStatistics" : {
+        "enable" : false
+    },
+    "vueVersion" : "3"
+}

@@ -1,6 +1,6 @@
 # 学生请销假系统
 
-基于 **Spring Boot 3.4 + Spring AI + Vue 3** 的学生请销假管理系统，前端为自建 Apple HIG（Human Interface Guidelines）风格设计体系。覆盖「学生提交请假 → 辅导员审批 → 学生返校销假 → 辅导员确认」的完整闭环，并内置三项 AI 能力（智能填单 / 审批建议 / 制度问答）。
+基于 **Spring Boot 3.4 + Spring AI + Vue 3** 的学生请销假管理系统，提供 **Web 端 + 微信小程序（uni-app）** 双前端，界面为自建 Apple HIG（Human Interface Guidelines）风格设计体系。学生/辅导员移动场景走小程序，管理员统计与用户管理走 Web 端。覆盖「学生提交请假 → 辅导员审批 → 学生返校销假 → 辅导员确认」的完整闭环，并内置三项 AI 能力（智能填单 / 审批建议 / 制度问答）。
 
 ## ✨ 特性
 
@@ -13,6 +13,7 @@
   - **无 Key 优雅降级**：`OPENAI_API_KEY` / `ANTHROPIC_API_KEY` 均未配置时 AI 接口统一返回 `code=5001`，前端提示但不阻断人工流程；出站请求带 5s 连接 / 60s 读超时，endpoint 不可达也不会挂起
 - **Apple HIG 风格 UI**：CSS 设计令牌（Design Token）体系、毛玻璃卡片（`backdrop-filter`）、iOS 风胶囊按钮 / 状态徽章 / 分段控件、内联 SVG 图标组件（无 emoji、无第三方 UI 库）
 - **管理端统计看板**：数字卡片 + ECharts 按需引入（类型分布环形图、近 6 个月趋势折线图）
+- **微信小程序端（uni-app Vue3）**：学生请假、辅导员审批、AI 能力全覆盖；**微信一键登录**（wx.login → jscode2session → openid，首次账号绑定后免密）+ 账号密码双通道，未配置微信凭据时自动隐藏微信入口
 - **辅导员数据隔离**：每个学生绑定一名辅导员（`sys_user.teacher_id`），辅导员只能看到/处理自己名下学生的请假单
 
 ## 🖥 界面预览
@@ -24,6 +25,12 @@
 | 辅导员·待审批 | 管理员·统计看板 | 管理员·用户管理 |
 |---|---|---|
 | ![待审批](docs/screenshots/04_teacher_pending.png) | ![统计看板](docs/screenshots/05_admin_dashboard.png) | ![用户管理](docs/screenshots/06_admin_users.png) |
+
+**微信小程序端**
+
+| 登录（微信/账号双通道） | 学生·我的请假 | 学生·新建+AI 填单 | 辅导员·待办 |
+|---|---|---|---|
+| ![小程序登录](docs/screenshots/mp_01_login.png) | ![小程序列表](docs/screenshots/mp_02_student_list.png) | ![小程序AI填单](docs/screenshots/mp_03_new_ai.png) | ![小程序待办](docs/screenshots/mp_04_teacher_pending.png) |
 
 ## 🧰 技术栈
 
@@ -51,6 +58,13 @@
 | ECharts | ^5.6.0 | 统计看板图表（按需引入） |
 | Vite | ^6.0.7 | 开发服务器与构建 |
 | @vitejs/plugin-vue | ^5.2.1 | Vue SFC 支持 |
+
+### 微信小程序（`miniprogram/`）
+
+| 依赖 | 用途 |
+|---|---|
+| uni-app (Vue3 + Vite) | 一套代码编译 `mp-weixin`（微信开发者工具）与 `h5`（本机预览验证） |
+| 自绘组件 | AppIcon（SVG data-url，无 emoji）/ StatusPill / SegmentedBar / TabBar（Apple 风底部导航）/ SheetModal（iOS 底部面板） |
 
 ## 🚀 快速启动
 
@@ -115,7 +129,29 @@ npm run dev
 
 浏览器访问 <http://localhost:5173>。
 
-### 4. 演示账号
+### 4. 微信小程序（可选）
+
+```bash
+cd miniprogram
+npm install
+npm run build:mp-weixin      # 产出 dist/build/mp-weixin
+# 或开发模式（watch）：npm run dev:mp-weixin → dist/dev/mp-weixin
+```
+
+用**微信开发者工具**导入 `miniprogram/dist/build/mp-weixin`（manifest 已配 appid，也可换成自己的），
+详情设置勾选「不校验合法域名/HTTPS 证书」（后端为 http://localhost:8080）；真机预览把
+`src/utils/request.js` 的 BASE_URL 改为局域网 IP 或正式域名。
+
+微信一键登录需后端配置小程序凭据（不配则小程序自动只显示账号密码登录）：
+
+```bash
+export WX_APPID=wx****************
+export WX_SECRET=********************************   # 仅后端环境变量，绝不进前端代码/仓库
+```
+
+无微信开发者工具时可用 H5 预览界面效果：`npm run dev:h5`。
+
+### 5. 演示账号
 
 | 账号 | 密码 | 角色 |
 |---|---|---|
@@ -126,7 +162,7 @@ npm run dev
 | student2 | 123456 | 学生（李四，teacher1 名下） |
 | student3 | 123456 | 学生（王五，teacher2 名下） |
 
-### 5. 冒烟测试（24 项断言）
+### 6. 冒烟测试（24 项断言）
 
 后端启动后执行：
 
@@ -165,6 +201,14 @@ leave-system
 │       ├── views/                    # student / teacher / admin 三端页面
 │       ├── styles/main.css           # Apple HIG 设计令牌体系
 │       └── utils/                    # 枚举映射、toast
+├── miniprogram/                      # 微信小程序（uni-app Vue3 + Vite）
+│   └── src/
+│       ├── manifest.json             # mp-weixin appid（无 Secret）
+│       ├── pages.json                # 9 页注册
+│       ├── utils/request.js          # uni.request 封装（token/401/5001/4010）
+│       ├── api/                      # 契约接口封装（含微信登录三接口）
+│       ├── components/               # AppIcon/StatusPill/SegmentedBar/TabBar/SheetModal
+│       └── pages/                    # 登录/微信绑定/学生端/辅导员端/AI 问答/我的
 └── docs/
     ├── 方案设计.md
     ├── 接口文档.md

@@ -44,3 +44,7 @@ jwt:
 logging:
   level:
     com.school.leave: info
+
+wx:
+  appid: ${WX_APPID:}
+  secret: ${WX_SECRET:}

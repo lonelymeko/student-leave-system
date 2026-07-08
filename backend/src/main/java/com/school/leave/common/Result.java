@@ -21,6 +21,14 @@ public class Result<T> {
         return ok(null);
     }
 
+    public static <T> Result<T> of(int code, String msg, T data) {
+        Result<T> r = new Result<>();
+        r.code = code;
+        r.msg = msg;
+        r.data = data;
+        return r;
+    }
+
     public static <T> Result<T> error(int code, String msg) {
         Result<T> r = new Result<>();
         r.code = code;

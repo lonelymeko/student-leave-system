@@ -22,6 +22,9 @@ public class SysUser {
     private String className;
     private String phone;
     private Long teacherId;
+    /** 微信 openid（小程序一键登录绑定），序列化隐藏 */
+    @JsonIgnore
+    private String wxOpenid;
     private Integer status;
     private LocalDateTime createTime;
 }

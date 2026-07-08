@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "请假详情",
+  "usingComponents": {
+    "app-icon": "../../components/AppIcon",
+    "status-pill": "../../components/StatusPill",
+    "empty-box": "../../components/EmptyBox",
+    "sheet-modal": "../../components/SheetModal"
+  }
+}

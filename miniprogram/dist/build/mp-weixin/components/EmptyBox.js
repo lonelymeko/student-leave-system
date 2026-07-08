@@ -1,0 +1,1 @@
+"use strict";const t=require("../common/vendor.js");Math||e();const e=()=>"./AppIcon.js",o={__name:"EmptyBox",props:{icon:{type:String,default:"inbox"},text:{type:String,default:"暂无数据"}},setup:e=>(o,n)=>({a:t.p({name:e.icon,size:26,color:"#a1a1a6"}),b:t.t(e.text)})};wx.createComponent(o);

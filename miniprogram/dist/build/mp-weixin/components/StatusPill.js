@@ -1,0 +1,1 @@
+"use strict";const t=require("../common/vendor.js"),s=require("../utils/constants.js"),e={__name:"StatusPill",props:{status:{type:String,default:""}},setup(e){const u=e,a=t.computed(()=>s.statusText(u.status)),n=t.computed(()=>s.statusPill(u.status));return(s,e)=>({a:t.t(a.value),b:t.n(n.value)})}};wx.createComponent(e);

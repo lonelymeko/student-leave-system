@@ -131,6 +131,10 @@ npm run dev
 
 ### 4. 微信小程序（可选）
 
+**方式 A（免构建，推荐）**：仓库已内置编译产物，克隆后直接用微信开发者工具**导入 `miniprogram/dist/build/mp-weixin` 目录**（注意：不是 `miniprogram/` 源码目录，导错会报"未找到 app.json"）。
+
+**方式 B（自行构建/二次开发）**：
+
 ```bash
 cd miniprogram
 npm install

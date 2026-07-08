@@ -1,0 +1,1 @@
+"use strict";const e=require("../common/vendor.js"),t={__name:"SheetModal",props:{show:{type:Boolean,default:!1},title:{type:String,default:""}},emits:["close"],setup(t,{emit:o}){const s=o;return(o,l)=>e.e({a:t.show},t.show?e.e({b:e.o(e=>s("close"),"28"),c:t.title},t.title?{d:e.t(t.title)}:{}):{})}};wx.createComponent(t);

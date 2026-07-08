@@ -9,7 +9,8 @@ lerna-debug.log*
 
 node_modules
 .DS_Store
-dist
+# dist 产物入库（build/mp-weixin 可直接导入微信开发者工具）；dev 产物不入库
+dist/dev/
 *.local
 
 # Editor directories and files

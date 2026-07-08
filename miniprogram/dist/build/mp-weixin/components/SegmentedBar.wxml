@@ -1,0 +1,1 @@
+<scroll-view scroll-x class="seg-scroll data-v-7de5a8e0" show-scrollbar="{{false}}"><view class="segmented data-v-7de5a8e0"><view wx:for="{{a}}" wx:for-item="o" wx:key="b" class="{{['seg-item', 'data-v-7de5a8e0', o.c && 'active']}}" bindtap="{{o.d}}">{{o.a}}</view></view></scroll-view>

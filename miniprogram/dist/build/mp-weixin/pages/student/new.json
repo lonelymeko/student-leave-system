@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "新建请假",
+  "usingComponents": {
+    "app-icon": "../../components/AppIcon",
+    "tab-bar": "../../components/TabBar"
+  }
+}

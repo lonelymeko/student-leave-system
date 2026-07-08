@@ -14,18 +14,25 @@ const focusP = ref(false)
 // 微信登录是否可用（后端未配 AppID/Secret 时隐藏微信按钮）
 const wxOk = ref(false)
 const wxLoading = ref(false)
+// 后端探测失败（网络不可达）时给出可见警告，而不是静默隐藏微信按钮
+const serverDown = ref(false)
 
-onLoad(async () => {
+onLoad(() => { probeWx() })
+
+async function probeWx() {
   // 仅小程序端探测微信登录可用性；H5 无 uni.login 微信通道，恒隐藏微信按钮
   // #ifdef MP-WEIXIN
   try {
     const d = await wxEnabled()
     wxOk.value = !!d?.enabled
+    serverDown.value = false
   } catch (e) {
+    // 区分两种情况：enabled=false 是正常降级；请求都发不出去 = 后端不可达
     wxOk.value = false
+    serverDown.value = true
   }
   // #endif
-})
+}
 
 function enter(user, viaWx) {
   if (user.role === 'ADMIN') {
@@ -111,6 +118,14 @@ async function doWxLogin() {
       </view>
       <view class="title">学生请销假系统</view>
       <view class="subtitle">Student Leave Management</view>
+
+      <!-- 后端不可达警告（否则微信按钮消失让人摸不着头脑） -->
+      <!-- #ifdef MP-WEIXIN -->
+      <view v-if="serverDown" class="server-warn" @click="probeWx">
+        <AppIcon name="warning" :size="14" color="#ff9500" />
+        <text>无法连接服务器（{{'http://localhost:8080'}}），微信登录已隐藏。请确认后端已启动或 SSH 隧道已建立，点此重试</text>
+      </view>
+      <!-- #endif -->
 
       <!-- 微信一键登录（主按钮；后端未启用时隐藏；H5 中隐藏） -->
       <!-- #ifdef MP-WEIXIN -->
@@ -204,6 +219,8 @@ async function doWxLogin() {
 .subtitle { font-size: 12.5px; color: var(--text-2); margin: 4px 0 26px; letter-spacing: .3px; }
 
 .wx-btn { margin-bottom: 4px; }
+.server-warn { display: flex; align-items: flex-start; gap: 6px; width: 100%; padding: 10px 12px; margin-bottom: 14px;
+  background: rgba(255, 149, 0, 0.12); border-radius: 10px; font-size: 12px; color: #b25000; line-height: 1.5; }
 .divider { display: flex; align-items: center; gap: 10px; width: 100%; margin: 16px 0 14px; }
 .divider .line { flex: 1; height: .5px; background: var(--separator); }
 .divider-text { font-size: 12px; color: var(--text-2); }

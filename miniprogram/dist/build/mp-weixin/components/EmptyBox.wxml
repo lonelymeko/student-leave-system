@@ -1,0 +1,1 @@
+<view class="empty-state"><view class="icon-wrap"><app-icon wx:if="{{a}}" u-i="9872656e-0" bind:__l="__l" u-p="{{a}}"/></view><text style="font-size:13.5px">{{b}}</text><slot/></view>

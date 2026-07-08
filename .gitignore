@@ -1,6 +1,11 @@
 # 依赖与构建产物
 node_modules/
 dist/
+# 例外：小程序编译产物入库（逐层放行），clone 后可直接导入微信开发者工具
+!miniprogram/dist/
+!miniprogram/dist/build/
+!miniprogram/dist/build/mp-weixin/
+!miniprogram/dist/build/mp-weixin/**
 target/
 
 # 日志

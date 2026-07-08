@@ -1,0 +1,11 @@
+{
+  "navigationBarTitleText": "审批历史",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "app-icon": "../../components/AppIcon",
+    "status-pill": "../../components/StatusPill",
+    "empty-box": "../../components/EmptyBox",
+    "tab-bar": "../../components/TabBar"
+  }
+}

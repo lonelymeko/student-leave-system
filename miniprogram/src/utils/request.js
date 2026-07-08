@@ -18,6 +18,16 @@ BASE_URL = '/api'
 
 const SILENT_CODES = [5001, 4010]
 
+/** uni.request 会把 undefined/null 值序列化成字符串 "undefined"/"null" 拼进 query，必须先清洗 */
+function cleanParams(data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return data
+  const out = {}
+  for (const k in data) {
+    if (data[k] !== undefined && data[k] !== null) out[k] = data[k]
+  }
+  return out
+}
+
 export function request(method, url, data) {
   return new Promise((resolve, reject) => {
     const header = { 'Content-Type': 'application/json' }
@@ -27,7 +37,7 @@ export function request(method, url, data) {
     uni.request({
       url: BASE_URL + url,
       method,
-      data,
+      data: cleanParams(data),
       header,
       timeout: 60000,
       success: res => {

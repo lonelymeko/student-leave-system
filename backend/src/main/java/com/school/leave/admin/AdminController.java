@@ -32,8 +32,14 @@ public class AdminController {
     private final SysUserMapper userMapper;
     private final LeaveService leaveService;
     private final StatsService statsService;
+    private final com.school.leave.config.sys.ConfigService configService;
 
     private static final Set<String> ROLES = Set.of("STUDENT", "TEACHER", "ADMIN");
+
+    @Data
+    public static class ConfigDTO {
+        private String value;
+    }
 
     @Data
     public static class UserDTO {
@@ -197,5 +203,19 @@ public class AdminController {
     @GetMapping("/stats/overview")
     public Result<Map<String, Object>> statsOverview() {
         return Result.ok(statsService.overview());
+    }
+
+    // ---------------- 系统配置 ----------------
+
+    @GetMapping("/configs")
+    public Result<List<com.school.leave.config.sys.SysConfigEntity>> configs() {
+        return Result.ok(configService.list());
+    }
+
+    @PutMapping("/configs/{key}")
+    public Result<Void> updateConfig(@PathVariable String key, @RequestBody ConfigDTO dto) {
+        if (!StringUtils.hasText(key)) throw BizException.badParam("配置键不能为空");
+        configService.set(key, dto == null ? null : dto.getValue());
+        return Result.ok();
     }
 }

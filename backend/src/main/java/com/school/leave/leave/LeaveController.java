@@ -6,7 +6,9 @@ import com.school.leave.config.RequireRole;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 /** 学生端请假接口 */
@@ -54,5 +56,19 @@ public class LeaveController {
     public Result<Void> cancelApply(@PathVariable Long id, @RequestBody(required = false) CancelApplyDTO dto) {
         leaveService.cancelApply(id, dto == null ? null : dto.getNote());
         return Result.ok();
+    }
+
+    /** 上传附件（仅该单学生本人） */
+    @PostMapping("/{id}/attachment")
+    @RequireRole("STUDENT")
+    public Result<LeaveAttachment> uploadAttachment(@PathVariable Long id, @RequestParam("file") MultipartFile file) {
+        return Result.ok(leaveService.uploadAttachment(id, file));
+    }
+
+    /** 附件列表（受详情越权规则约束） */
+    @GetMapping("/{id}/attachments")
+    public Result<List<LeaveAttachment>> attachments(@PathVariable Long id) {
+        leaveService.detail(id); // 复用越权校验
+        return Result.ok(leaveService.listAttachments(id));
     }
 }

@@ -1,6 +1,7 @@
 package com.school.leave.ai;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.school.leave.auth.UserContext;
 import com.school.leave.common.BizException;
 import com.school.leave.common.enums.LeaveStatus;
 import com.school.leave.common.enums.LeaveType;
@@ -57,6 +58,8 @@ public class AiService {
     private final LeaveMapper leaveMapper;
     private final SysUserMapper userMapper;
     private final ObjectMapper objectMapper;
+    private final com.school.leave.config.sys.ConfigService configService;
+    private final AiChatLogMapper aiChatLogMapper;
 
     @Value("${spring.ai.openai.api-key:}")
     private String openAiKey;
@@ -192,10 +195,43 @@ public class AiService {
     /** 制度问答 */
     public Map<String, Object> chat(String message) {
         if (!StringUtils.hasText(message)) throw BizException.badParam("message 不能为空");
-        String reply = call(POLICY, message);
+        String reply = call(policy(), message);
+        String answer = reply.trim();
+        logChat(message, answer);
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("reply", reply.trim());
+        data.put("reply", answer);
         return data;
+    }
+
+    /** 请假制度 system 提示词：优先读 sys_config('leave.policy')，读不到回退常量 */
+    private String policy() {
+        String cfg = configService.get("leave.policy");
+        return StringUtils.hasText(cfg) ? cfg : POLICY;
+    }
+
+    /** best-effort 记录 AI 对话，失败绝不影响接口返回 */
+    private void logChat(String question, String answer) {
+        try {
+            AiChatLog log = new AiChatLog();
+            log.setUserId(UserContext.id());
+            log.setQuestion(question);
+            log.setAnswer(answer);
+            log.setProvider(currentProvider());
+            log.setCreateTime(LocalDateTime.now());
+            aiChatLogMapper.insert(log);
+        } catch (Exception e) {
+            AiService.log.warn("AI 对话记录落库失败: {}", e.toString());
+        }
+    }
+
+    /** 当前实际使用的供应商标签 */
+    private String currentProvider() {
+        ChatModel m = selectModel();
+        if (m == null) return null;
+        String cls = m.getClass().getSimpleName();
+        if (cls.startsWith("OpenAi")) return "openai";
+        if (cls.startsWith("Anthropic")) return "anthropic";
+        return cls;
     }
 
     /** 从模型输出中截取并解析 JSON 对象 */

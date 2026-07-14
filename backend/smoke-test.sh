@@ -144,5 +144,28 @@ else
   assert_code 5001 "$R" "AI chat 无 Key 降级 5001"
 fi
 
+say "12. 增量子系统：类型字典 / 配置 / 通知 / 附件"
+R=$(curl -s "$BASE/leave-types" -H "Authorization: Bearer $STUDENT_TOKEN")
+assert_code 0 "$R" "GET /leave-types 类型字典"
+echo "  第一个类型: $(field "$R" data.0.typeCode) enabled=$(field "$R" data.0.enabled)"
+
+# 提交非法类型 → 4001（字典/枚举校验）
+R=$(curl -s -X POST "$BASE/leave" -H "Authorization: Bearer $STUDENT_TOKEN" -H 'Content-Type: application/json' \
+  -d "{\"type\":\"NOT_EXIST\",\"startTime\":\"$START\",\"endTime\":\"$END\",\"reason\":\"非法类型测试\"}")
+assert_code 4001 "$R" "非字典类型返回 4001"
+
+R=$(curl -s "$BASE/notifications?page=1&size=5" -H "Authorization: Bearer $STUDENT_TOKEN")
+assert_code 0 "$R" "GET /notifications 我的通知"
+echo "  通知 total=$(field "$R" data.total)"
+
+R=$(curl -s "$BASE/notifications/unread-count" -H "Authorization: Bearer $STUDENT_TOKEN")
+assert_code 0 "$R" "GET /notifications/unread-count 未读数"
+
+R=$(curl -s "$BASE/admin/configs" -H "Authorization: Bearer $ADMIN_TOKEN")
+assert_code 0 "$R" "GET /admin/configs 系统配置(ADMIN)"
+
+R=$(curl -s "$BASE/admin/configs" -H "Authorization: Bearer $STUDENT_TOKEN")
+assert_code 403 "$R" "student 访问 /admin/configs 返回 403"
+
 printf '\n\033[1m===== 冒烟结果: PASS=%d FAIL=%d =====\033[0m\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

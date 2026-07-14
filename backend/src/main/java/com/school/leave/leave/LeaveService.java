@@ -28,6 +28,12 @@ public class LeaveService {
     private final LeaveMapper leaveMapper;
     private final ApprovalRecordMapper recordMapper;
     private final SysUserMapper userMapper;
+    private final com.school.leave.dict.LeaveTypeService leaveTypeService;
+    private final com.school.leave.notify.NotificationService notificationService;
+    private final LeaveAttachmentMapper attachmentMapper;
+
+    @org.springframework.beans.factory.annotation.Value("${app.upload-dir:./uploads}")
+    private String uploadDir;
 
     @Data
     public static class SubmitDTO {
@@ -44,6 +50,9 @@ public class LeaveService {
     public LeaveVO submit(SubmitDTO dto) {
         if (dto.getType() == null || !LeaveType.isValid(dto.getType())) {
             throw BizException.badParam("请假类型不合法");
+        }
+        if (!leaveTypeService.existsEnabled(dto.getType())) {
+            throw BizException.badParam("请假类型不在字典中或已停用");
         }
         if (dto.getStartTime() == null || dto.getEndTime() == null) {
             throw BizException.badParam("起止时间不能为空");
@@ -115,7 +124,44 @@ public class LeaveService {
         data.put("studentNo", vo.getStudentNo());
         data.put("className", vo.getClassName());
         data.put("records", leaveMapper.findRecords(id));
+        data.put("attachments", listAttachments(id));
         return data;
+    }
+
+    /** 附件列表（按上传时间升序） */
+    public java.util.List<LeaveAttachment> listAttachments(Long leaveId) {
+        return attachmentMapper.selectList(new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<LeaveAttachment>()
+                .eq("leave_id", leaveId).orderByAsc("upload_time", "id"));
+    }
+
+    /** 上传附件：仅该单学生本人；保存到 uploadDir，插入元数据 */
+    public LeaveAttachment uploadAttachment(Long leaveId, org.springframework.web.multipart.MultipartFile file) {
+        LeaveRequest lr = mustGetOwn(leaveId);
+        if (file == null || file.isEmpty()) throw BizException.badParam("文件不能为空");
+        String original = org.springframework.util.StringUtils.cleanPath(
+                file.getOriginalFilename() == null ? "file" : file.getOriginalFilename());
+        String ext = "";
+        int dot = original.lastIndexOf('.');
+        if (dot >= 0) ext = original.substring(dot);
+        String stored = "leave" + lr.getId() + "_" + System.currentTimeMillis()
+                + "_" + java.util.UUID.randomUUID().toString().substring(0, 8) + ext;
+        try {
+            java.nio.file.Path dir = java.nio.file.Paths.get(uploadDir).toAbsolutePath().normalize();
+            java.nio.file.Files.createDirectories(dir);
+            java.nio.file.Path target = dir.resolve(stored);
+            file.transferTo(target);
+        } catch (java.io.IOException e) {
+            throw new BizException(5000, "文件保存失败: " + e.getMessage());
+        }
+        LeaveAttachment att = new LeaveAttachment();
+        att.setLeaveId(lr.getId());
+        att.setFileName(original);
+        att.setFileUrl("/uploads/" + stored);
+        att.setFileSize(file.getSize());
+        att.setFileType(file.getContentType());
+        att.setUploadTime(LocalDateTime.now());
+        attachmentMapper.insert(att);
+        return att;
     }
 
     private void checkReadScope(LeaveVO vo) {
@@ -199,6 +245,12 @@ public class LeaveService {
         leaveMapper.updateById(lr);
         recordMapper.insert(ApprovalRecord.of(leaveId, UserContext.id(),
                 isApprove ? ApprovalAction.APPROVE.name() : ApprovalAction.REJECT.name(), comment));
+        // best-effort 通知学生审批结果
+        notificationService.send(lr.getStudentId(),
+                isApprove ? "请假申请已通过" : "请假申请被驳回",
+                "您的" + LeaveType.textOf(lr.getType()) + "申请" + (isApprove ? "已通过" : "被驳回")
+                        + (StringUtils.hasText(comment) ? "，意见：" + comment : ""),
+                "APPROVAL_RESULT", leaveId);
         return leaveMapper.findVoById(leaveId);
     }
 
@@ -213,6 +265,9 @@ public class LeaveService {
         lr.setCompleteTime(LocalDateTime.now());
         leaveMapper.updateById(lr);
         recordMapper.insert(ApprovalRecord.of(leaveId, UserContext.id(), ApprovalAction.CANCEL_CONFIRM.name(), "销假确认"));
+        // best-effort 通知学生销假确认
+        notificationService.send(lr.getStudentId(), "销假已确认",
+                "您的" + LeaveType.textOf(lr.getType()) + "已完成销假，流程结束", "APPROVAL_RESULT", leaveId);
         return leaveMapper.findVoById(leaveId);
     }
 

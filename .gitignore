@@ -24,3 +24,4 @@ template.doc*
 
 # 打包中间产物
 *.jar.original
+uploads/

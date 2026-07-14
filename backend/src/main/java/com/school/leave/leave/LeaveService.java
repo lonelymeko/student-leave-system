@@ -226,7 +226,12 @@ public class LeaveService {
         return PageVO.of(leaveMapper.pageHistory(new Page<>(page, size), UserContext.id()));
     }
 
-    /** 审批（仅 PENDING），REJECT 必填意见 */
+    /**
+     * 多级审批：
+     * - 辅导员(TEACHER)处理 PENDING：通过→ 若 days>max_days 转 LEADER_PENDING(待副书记)，否则 APPROVED；驳回→ REJECTED
+     * - 副书记(LEADER)处理 LEADER_PENDING：通过→ APPROVED；驳回→ REJECTED
+     * REJECT 必填意见；越权(角色处理不属于自己阶段的单)返回 4009
+     */
     @Transactional
     public LeaveVO approve(Long leaveId, String action, String comment) {
         boolean isApprove = "APPROVE".equals(action);
@@ -234,24 +239,64 @@ public class LeaveService {
         if (!isApprove && !isReject) throw BizException.badParam("action 必须为 APPROVE 或 REJECT");
         if (isReject && !StringUtils.hasText(comment)) throw BizException.badParam("驳回时必须填写审批意见");
 
-        LeaveRequest lr = mustGetInMyCharge(leaveId);
-        if (!LeaveStatus.PENDING.name().equals(lr.getStatus())) {
-            throw BizException.badState("仅待审批状态可审批");
+        SysUser me = UserContext.get();
+        String role = me.getRole();
+
+        LeaveRequest lr;
+        String targetStatus;
+
+        if ("LEADER".equals(role)) {
+            // 副书记只处理 LEADER_PENDING
+            lr = leaveMapper.selectById(leaveId);
+            if (lr == null) throw BizException.notFound("请假单不存在");
+            if (!LeaveStatus.LEADER_PENDING.name().equals(lr.getStatus())) {
+                throw BizException.badState("副书记仅可审批待副书记审批状态的请假单");
+            }
+            targetStatus = isApprove ? LeaveStatus.APPROVED.name() : LeaveStatus.REJECTED.name();
+        } else {
+            // 辅导员只处理名下学生的 PENDING
+            lr = mustGetInMyCharge(leaveId);
+            if (!LeaveStatus.PENDING.name().equals(lr.getStatus())) {
+                throw BizException.badState("辅导员仅可审批待审批状态的请假单");
+            }
+            if (isReject) {
+                targetStatus = LeaveStatus.REJECTED.name();
+            } else {
+                // 通过：超过该类型最大天数则转副书记
+                Integer maxDays = leaveTypeService.maxDaysOf(lr.getType());
+                boolean overLimit = maxDays != null
+                        && lr.getDays() != null
+                        && lr.getDays().compareTo(BigDecimal.valueOf(maxDays)) > 0;
+                targetStatus = overLimit ? LeaveStatus.LEADER_PENDING.name() : LeaveStatus.APPROVED.name();
+            }
         }
-        lr.setStatus(isApprove ? LeaveStatus.APPROVED.name() : LeaveStatus.REJECTED.name());
+
+        lr.setStatus(targetStatus);
         lr.setApproverId(UserContext.id());
         lr.setApproveComment(comment);
         lr.setApproveTime(LocalDateTime.now());
         leaveMapper.updateById(lr);
         recordMapper.insert(ApprovalRecord.of(leaveId, UserContext.id(),
                 isApprove ? ApprovalAction.APPROVE.name() : ApprovalAction.REJECT.name(), comment));
-        // best-effort 通知学生审批结果
-        notificationService.send(lr.getStudentId(),
-                isApprove ? "请假申请已通过" : "请假申请被驳回",
-                "您的" + LeaveType.textOf(lr.getType()) + "申请" + (isApprove ? "已通过" : "被驳回")
-                        + (StringUtils.hasText(comment) ? "，意见：" + comment : ""),
-                "APPROVAL_RESULT", leaveId);
+
+        // best-effort 通知学生
+        boolean toLeader = LeaveStatus.LEADER_PENDING.name().equals(targetStatus);
+        boolean finalApproved = LeaveStatus.APPROVED.name().equals(targetStatus);
+        String title = toLeader ? "请假申请已转副书记审批"
+                : (finalApproved ? "请假申请已通过" : "请假申请被驳回");
+        String body = "您的" + LeaveType.textOf(lr.getType()) + "申请"
+                + (toLeader ? "超过辅导员权限天数，已转副书记审批"
+                    : (finalApproved ? "已通过" : "被驳回"))
+                + (StringUtils.hasText(comment) ? "，意见：" + comment : "");
+        notificationService.send(lr.getStudentId(), title, body, "APPROVAL_RESULT", leaveId);
         return leaveMapper.findVoById(leaveId);
+    }
+
+    // ==================== 副书记 ====================
+
+    /** 副书记待办：所有 LEADER_PENDING */
+    public PageVO<LeaveVO> pageLeaderPending(long page, long size) {
+        return PageVO.of(leaveMapper.pageLeaderPending(new Page<>(page, size)));
     }
 
     /** 确认销假（仅 CANCEL_PENDING）→ COMPLETED */
@@ -280,6 +325,27 @@ public class LeaveService {
             throw BizException.forbidden("只能处理自己名下学生的请假单");
         }
         return lr;
+    }
+
+    // ==================== 排名 / 导出 ====================
+
+    /**
+     * 请假次数排名：TEACHER 仅统计自己名下学生；LEADER/ADMIN 统计全部。
+     * 返回 [{studentId,studentName,studentNo,className,leaveCount}] 按次数降序（排除 REVOKED）。
+     */
+    public java.util.List<Map<String, Object>> ranking() {
+        SysUser me = UserContext.get();
+        Long tid = "TEACHER".equals(me.getRole()) ? me.getId() : null;
+        return leaveMapper.ranking(tid);
+    }
+
+    /**
+     * 导出数据源：TEACHER 仅名下；LEADER/ADMIN 全部；可按 status 过滤。
+     */
+    public java.util.List<LeaveVO> exportData(String status) {
+        SysUser me = UserContext.get();
+        Long tid = "TEACHER".equals(me.getRole()) ? me.getId() : null;
+        return leaveMapper.exportList(tid, status);
     }
 
     // ==================== 管理端 ====================

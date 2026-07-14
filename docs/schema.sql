@@ -51,7 +51,8 @@ INSERT INTO sys_user (id, username, password, real_name, role, student_no, class
 (3,'teacher2','$2b$10$7NTN.bFSBQ1uyp73TTfWleMTctwiFBYpekK4SRjEt.Vj.nv1oJcvm','王辅导','TEACHER',NULL,NULL,'13900000002',NULL,1,'2026-01-10 09:06:00'),
 (4,'student1','$2b$10$7NTN.bFSBQ1uyp73TTfWleMTctwiFBYpekK4SRjEt.Vj.nv1oJcvm','张三','STUDENT','20230001','软件2101','13800000001',2,1,'2026-01-10 09:10:00'),
 (5,'student2','$2b$10$7NTN.bFSBQ1uyp73TTfWleMTctwiFBYpekK4SRjEt.Vj.nv1oJcvm','李四','STUDENT','20230002','软件2101','13800000002',2,1,'2026-01-10 09:11:00'),
-(6,'student3','$2b$10$7NTN.bFSBQ1uyp73TTfWleMTctwiFBYpekK4SRjEt.Vj.nv1oJcvm','王五','STUDENT','20230003','软件2102','13800000003',3,1,'2026-01-10 09:12:00');
+(6,'student3','$2b$10$7NTN.bFSBQ1uyp73TTfWleMTctwiFBYpekK4SRjEt.Vj.nv1oJcvm','王五','STUDENT','20230003','软件2102','13800000003',3,1,'2026-01-10 09:12:00'),
+(7,'leader1','$2b$10$7NTN.bFSBQ1uyp73TTfWleMTctwiFBYpekK4SRjEt.Vj.nv1oJcvm','赵副书记','LEADER',NULL,NULL,'13900000003',NULL,1,'2026-01-10 09:07:00');
 
 -- ---------------- 种子请假单（近6个月，覆盖全部状态） ----------------
 INSERT INTO leave_request (id, student_id, type, start_time, end_time, days, reason, destination, contact_phone, status, approver_id, approve_comment, approve_time, cancel_apply_time, cancel_note, complete_time, create_time) VALUES

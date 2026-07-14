@@ -167,5 +167,78 @@ assert_code 0 "$R" "GET /admin/configs 系统配置(ADMIN)"
 R=$(curl -s "$BASE/admin/configs" -H "Authorization: Bearer $STUDENT_TOKEN")
 assert_code 403 "$R" "student 访问 /admin/configs 返回 403"
 
+# ============================================================
+# 13. 多级审批（学生→辅导员→副书记）+ 排名 + 导出
+# ============================================================
+say "13. 多级审批：副书记登录 + 长假转审全链路"
+R=$(login leader1 123456); assert_code 0 "$R" "leader1（副书记）登录"; LEADER_TOKEN=$(field "$R" data.token)
+
+# 学生提交 EMERGENCY 4 天（> leave_type.EMERGENCY.max_days=3）→ 触发转副书记
+L_START=$(date -d "+2 day" '+%Y-%m-%d 08:00:00')
+L_END=$(date -d "+5 day" '+%Y-%m-%d 18:00:00')
+R=$(curl -s -X POST "$BASE/leave" -H "Authorization: Bearer $STUDENT_TOKEN" -H 'Content-Type: application/json' \
+  -d "{\"type\":\"EMERGENCY\",\"startTime\":\"$L_START\",\"endTime\":\"$L_END\",\"reason\":\"家中突发急事需处理多日\",\"destination\":\"乌鲁木齐\",\"contactPhone\":\"13800000000\"}")
+assert_code 0 "$R" "提交长假(EMERGENCY 4天 > max3)"
+LONG_ID=$(field "$R" data.id)
+echo "  长假单 id=$LONG_ID days=$(field "$R" data.days)"
+
+# 辅导员通过 → 应转 LEADER_PENDING（不再直接 APPROVED）
+R=$(curl -s -X POST "$BASE/approval/$LONG_ID" -H "Authorization: Bearer $TEACHER_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"action":"APPROVE","comment":"同意，转副书记"}')
+assert_code 0 "$R" "辅导员通过长假"
+LONG_STATUS=$(field "$R" data.status)
+if [ "$LONG_STATUS" = "LEADER_PENDING" ]; then
+  echo "  [PASS] 长假辅导员通过后转 LEADER_PENDING"; PASS=$((PASS+1))
+else
+  echo "  [FAIL] 长假期望 LEADER_PENDING 实际 $LONG_STATUS"; FAIL=$((FAIL+1))
+fi
+
+# 副书记待办应含此单
+R=$(curl -s "$BASE/approval/leader-pending?page=1&size=10" -H "Authorization: Bearer $LEADER_TOKEN")
+assert_code 0 "$R" "副书记待办列表"
+echo "  副书记待办 total=$(field "$R" data.total)"
+
+# 越权：辅导员不能再审 LEADER_PENDING → 4009
+R=$(curl -s -X POST "$BASE/approval/$LONG_ID" -H "Authorization: Bearer $TEACHER_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"action":"APPROVE","comment":"再批"}')
+assert_code 4009 "$R" "辅导员审 LEADER_PENDING 返回 4009（阶段越权）"
+
+# 越权：副书记访问辅导员待办 → 403
+R=$(curl -s "$BASE/approval/pending" -H "Authorization: Bearer $LEADER_TOKEN")
+assert_code 403 "$R" "副书记访问 /approval/pending 返回 403"
+
+# 副书记通过 → APPROVED
+R=$(curl -s -X POST "$BASE/approval/$LONG_ID" -H "Authorization: Bearer $LEADER_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"action":"APPROVE","comment":"副书记同意"}')
+assert_code 0 "$R" "副书记通过长假"
+LONG_STATUS2=$(field "$R" data.status)
+if [ "$LONG_STATUS2" = "APPROVED" ]; then
+  echo "  [PASS] 副书记通过后 → APPROVED"; PASS=$((PASS+1))
+else
+  echo "  [FAIL] 期望 APPROVED 实际 $LONG_STATUS2"; FAIL=$((FAIL+1))
+fi
+
+say "14. 请假次数排名 /approval/ranking"
+R=$(curl -s "$BASE/approval/ranking" -H "Authorization: Bearer $TEACHER_TOKEN")
+assert_code 0 "$R" "辅导员排名"
+echo "  teacher1 名下第一名: $(field "$R" data.0.studentName) 次数=$(field "$R" data.0.leaveCount)"
+R=$(curl -s "$BASE/approval/ranking" -H "Authorization: Bearer $LEADER_TOKEN")
+assert_code 0 "$R" "副书记排名（全部学生）"
+# student 无权访问排名 → 403
+R=$(curl -s "$BASE/approval/ranking" -H "Authorization: Bearer $STUDENT_TOKEN")
+assert_code 403 "$R" "student 访问 /approval/ranking 返回 403"
+
+say "15. 导出 Excel /approval/leaves/export"
+# 校验 HTTP 200 + Content-Type 为 xlsx + 文件非空
+HDR=$(curl -s -D - -o /tmp/smoke_export.xlsx "$BASE/approval/leaves/export" -H "Authorization: Bearer $LEADER_TOKEN")
+HTTP=$(printf '%s' "$HDR" | head -1 | grep -o '[0-9]\{3\}')
+CT=$(printf '%s' "$HDR" | grep -i 'content-type' | grep -io 'spreadsheetml' )
+SZ=$(wc -c < /tmp/smoke_export.xlsx 2>/dev/null || echo 0)
+if [ "$HTTP" = "200" ] && [ -n "$CT" ] && [ "$SZ" -gt 100 ]; then
+  echo "  [PASS] 导出返回 200 + xlsx + 非空($SZ 字节)"; PASS=$((PASS+1))
+else
+  echo "  [FAIL] 导出 http=$HTTP ct=$CT size=$SZ"; FAIL=$((FAIL+1))
+fi
+
 printf '\n\033[1m===== 冒烟结果: PASS=%d FAIL=%d =====\033[0m\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

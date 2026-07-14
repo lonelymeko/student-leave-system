@@ -38,6 +38,31 @@ public interface LeaveMapper extends BaseMapper<LeaveRequest> {
     @Select(SELECT_VO + " WHERE lr.approver_id = #{tid} ORDER BY lr.approve_time DESC")
     IPage<LeaveVO> pageHistory(IPage<LeaveVO> page, @Param("tid") Long tid);
 
+    /** 副书记待办：所有 LEADER_PENDING */
+    @Select(SELECT_VO + " WHERE lr.status = 'LEADER_PENDING' ORDER BY lr.create_time ASC")
+    IPage<LeaveVO> pageLeaderPending(IPage<LeaveVO> page);
+
+    // ------- 请假次数排名 -------
+    /** 名下学生请假次数排名（tid 非空=仅该辅导员名下；为空=全部）；排除 REVOKED */
+    @Select("<script>SELECT s.id AS studentId, s.real_name AS studentName, s.student_no AS studentNo, " +
+            "s.class_name AS className, COUNT(lr.id) AS leaveCount " +
+            "FROM sys_user s LEFT JOIN leave_request lr ON lr.student_id = s.id AND lr.status &lt;&gt; 'REVOKED' " +
+            "WHERE s.role = 'STUDENT'" +
+            "<if test='tid != null'> AND s.teacher_id = #{tid}</if>" +
+            " GROUP BY s.id, s.real_name, s.student_no, s.class_name " +
+            "ORDER BY leaveCount DESC, s.student_no ASC</script>")
+    List<Map<String, Object>> ranking(@Param("tid") Long tid);
+
+    // ------- 导出（不分页） -------
+    @Select("<script>" + SELECT_VO +
+            "<choose>" +
+            "<when test='tid != null'> WHERE s.teacher_id = #{tid}</when>" +
+            "<otherwise> WHERE 1=1</otherwise>" +
+            "</choose>" +
+            "<if test='status != null and status != \"\"'> AND lr.status = #{status}</if>" +
+            " ORDER BY lr.create_time DESC</script>")
+    List<LeaveVO> exportList(@Param("tid") Long tid, @Param("status") String status);
+
     @Select("<script>" + SELECT_VO + " WHERE 1=1" +
             "<if test='status != null and status != \"\"'> AND lr.status = #{status}</if>" +
             "<if test='keyword != null and keyword != \"\"'> AND (s.real_name LIKE CONCAT('%',#{keyword},'%')" +

@@ -26,4 +26,12 @@ public class LeaveTypeService {
                 .eq("type_code", typeCode).eq("enabled", 1));
         return c != null && c > 0;
     }
+
+    /** 取该类型单次最大天数；查不到返回 null（表示不限制） */
+    public Integer maxDaysOf(String typeCode) {
+        if (typeCode == null) return null;
+        LeaveTypeEntity e = mapper.selectOne(new QueryWrapper<LeaveTypeEntity>()
+                .eq("type_code", typeCode).last("LIMIT 1"));
+        return e == null ? null : e.getMaxDays();
+    }
 }

@@ -9,6 +9,6 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RequireRole {
-    /** 允许的角色：STUDENT / TEACHER / ADMIN */
+    /** 允许的角色：STUDENT / TEACHER / LEADER / ADMIN */
     String[] value();
 }

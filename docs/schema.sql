@@ -16,8 +16,8 @@ CREATE TABLE sys_user (
   real_name VARCHAR(50) NOT NULL,
   role VARCHAR(20) NOT NULL,               -- STUDENT/TEACHER/ADMIN
   student_no VARCHAR(30), class_name VARCHAR(50), phone VARCHAR(20),
-  teacher_id BIGINT,
-  wx_openid VARCHAR(64) NULL UNIQUE,                       -- 学生的辅导员
+  teacher_id BIGINT,                       -- 学生的辅导员(自关联 sys_user.id)
+  wx_openid VARCHAR(64) NULL UNIQUE,       -- 微信 openid(小程序一键登录绑定)
   status TINYINT DEFAULT 1,                -- 1正常 0禁用
   create_time DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -171,7 +171,7 @@ public class LeaveService {
                 if (!vo.getStudentId().equals(me.getId())) throw BizException.forbidden("只能查看自己的请假单");
             }
             case "TEACHER" -> {
-                SysUser student = userMapper.selectById(vo.getStudentId());
+                SysUser student = userMapper.enrichById(vo.getStudentId());
                 if (student == null || !me.getId().equals(student.getTeacherId())) {
                     throw BizException.forbidden("只能查看自己名下学生的请假单");
                 }
@@ -320,7 +320,7 @@ public class LeaveService {
     public LeaveRequest mustGetInMyCharge(Long leaveId) {
         LeaveRequest lr = leaveMapper.selectById(leaveId);
         if (lr == null) throw BizException.notFound("请假单不存在");
-        SysUser student = userMapper.selectById(lr.getStudentId());
+        SysUser student = userMapper.enrichById(lr.getStudentId());
         if (student == null || !UserContext.id().equals(student.getTeacherId())) {
             throw BizException.forbidden("只能处理自己名下学生的请假单");
         }

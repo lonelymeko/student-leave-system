@@ -37,7 +37,7 @@ public class AuthInterceptor implements HandlerInterceptor {
         if (userId == null) {
             return reject(response, 401, "未登录或Token失效");
         }
-        SysUser user = userMapper.selectById(userId);
+        SysUser user = userMapper.enrichById(userId);
         if (user == null || user.getStatus() == null || user.getStatus() != 1) {
             return reject(response, 401, "账号不存在或已禁用");
         }

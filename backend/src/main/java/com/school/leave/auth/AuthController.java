@@ -45,9 +45,7 @@ public class AuthController {
         if (!StringUtils.hasText(dto.getUsername()) || !StringUtils.hasText(dto.getPassword())) {
             throw BizException.badParam("用户名和密码不能为空");
         }
-        SysUser user = userMapper.selectOne(
-                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<SysUser>()
-                        .eq("username", dto.getUsername()));
+        SysUser user = userMapper.enrichByUsername(dto.getUsername());
         if (user == null || !BCrypt.checkpw(dto.getPassword(), user.getPassword())) {
             throw BizException.badParam("用户名或密码错误");
         }
@@ -76,9 +74,7 @@ public class AuthController {
     public Result<Map<String, Object>> wxLogin(@RequestBody WxLoginDTO dto) {
         if (!StringUtils.hasText(dto.getCode())) throw BizException.badParam("code 不能为空");
         String openid = wxService.codeToOpenid(dto.getCode());
-        SysUser user = userMapper.selectOne(
-                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<SysUser>()
-                        .eq("wx_openid", openid));
+        SysUser user = userMapper.enrichByOpenid(openid);
         if (user == null) {
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("bindTicket", jwtUtil.createBindTicket(openid));
@@ -102,9 +98,7 @@ public class AuthController {
         if (!StringUtils.hasText(dto.getUsername()) || !StringUtils.hasText(dto.getPassword())) {
             throw BizException.badParam("用户名和密码不能为空");
         }
-        SysUser user = userMapper.selectOne(
-                new com.baomidou.mybatisplus.core.conditions.query.QueryWrapper<SysUser>()
-                        .eq("username", dto.getUsername()));
+        SysUser user = userMapper.enrichByUsername(dto.getUsername());
         if (user == null || !BCrypt.checkpw(dto.getPassword(), user.getPassword())) {
             throw BizException.badParam("用户名或密码错误");
         }
@@ -130,8 +124,9 @@ public class AuthController {
 
     private UserVO buildVO(SysUser user) {
         String teacherName = null;
+        // 学生的 teacherId = 辅导员的 sys_user.id；enrich 后 realName 取自 teacher 表
         if (user.getTeacherId() != null) {
-            SysUser teacher = userMapper.selectById(user.getTeacherId());
+            SysUser teacher = userMapper.enrichById(user.getTeacherId());
             if (teacher != null) teacherName = teacher.getRealName();
         }
         return UserVO.of(user, teacherName);

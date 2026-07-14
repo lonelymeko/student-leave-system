@@ -160,7 +160,7 @@ public class AiService {
 
     /** 审批建议：本单信息 + 该生近半年请假统计 */
     public Map<String, Object> approvalAdvice(LeaveRequest lr) {
-        SysUser student = userMapper.selectById(lr.getStudentId());
+        SysUser student = userMapper.enrichById(lr.getStudentId());
         LocalDateTime since = LocalDateTime.now().minusMonths(6);
         long recentCount = leaveMapper.countRecentByStudent(lr.getStudentId(), since);
         BigDecimal recentDays = leaveMapper.sumRecentDaysByStudent(lr.getStudentId(), since);

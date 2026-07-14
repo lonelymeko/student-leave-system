@@ -15,6 +15,8 @@ public class LeaveRequest {
     private Long id;
     private Long studentId;
     private String type;
+    /** 所属学期（可空） */
+    private Long semesterId;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private BigDecimal days;

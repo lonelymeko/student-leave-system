@@ -34,6 +34,7 @@ export const clearBindTicket = () => uni.removeStorageSync(BIND_TICKET_KEY)
 // 各角色首页（小程序只做学生端 + 辅导员端，管理员请用 Web 端）
 export function homePath(role) {
   if (role === 'TEACHER') return '/pages/teacher/pending'
+  if (role === 'LEADER') return '/pages/leader/pending'
   return '/pages/student/leaves'
 }
 

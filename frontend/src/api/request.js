@@ -22,6 +22,8 @@ function goLogin() {
 
 instance.interceptors.response.use(
   res => {
+    // 文件流等场景：调用方需要完整 response（含 headers）
+    if (res.config?.rawResponse) return res
     const body = res.data
     if (body && typeof body === 'object' && 'code' in body) {
       if (body.code === 0) return body.data

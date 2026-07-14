@@ -11,6 +11,7 @@ export const typeText = v => (LEAVE_TYPES.find(t => t.value === v)?.label || v |
 
 export const STATUS_MAP = {
   PENDING: { text: '待审批', pill: 'pill-orange' },
+  LEADER_PENDING: { text: '待副书记审批', pill: 'pill-blue' },
   APPROVED: { text: '请假中', pill: 'pill-green' },
   REJECTED: { text: '已驳回', pill: 'pill-red' },
   REVOKED: { text: '已撤回', pill: 'pill-gray' },
@@ -24,6 +25,7 @@ export const statusPill = v => STATUS_MAP[v]?.pill || 'pill-gray'
 export const ROLE_MAP = {
   STUDENT: { text: '学生', pill: 'pill-blue' },
   TEACHER: { text: '辅导员', pill: 'pill-teal' },
+  LEADER: { text: '副书记', pill: 'pill-purple' },
   ADMIN: { text: '管理员', pill: 'pill-purple' }
 }
 

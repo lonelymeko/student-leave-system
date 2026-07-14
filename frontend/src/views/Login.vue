@@ -61,7 +61,7 @@ async function submit() {
       </form>
 
       <p class="demo-hint">
-        演示账号：student1 / teacher1（密码 123456）· admin（密码 admin123）
+        演示账号：student1 / teacher1 / leader1（密码 123456）· admin（密码 admin123）
       </p>
     </div>
   </div>

@@ -1,6 +1,6 @@
 <script setup>
 // 自绘 Apple 风底部导航（不用原生 tabBar）
-// 学生：请假 / 新建 / 我的；辅导员：待办 / 历史 / 我的
+// 学生：请假 / 新建 / 我的；辅导员：待办 / 历史 / 我的；副书记：二级审批 / 排名 / 我的
 import { computed } from 'vue'
 import AppIcon from './AppIcon.vue'
 import { getUser } from '../utils/auth'
@@ -22,8 +22,18 @@ const TEACHER_TABS = [
   { key: 'history', label: '历史', icon: 'history', url: '/pages/teacher/history' },
   { key: 'mine', label: '我的', icon: 'user', url: '/pages/mine/mine' }
 ]
+const LEADER_TABS = [
+  { key: 'leader-pending', label: '二级审批', icon: 'inbox', url: '/pages/leader/pending' },
+  { key: 'ranking', label: '排名', icon: 'trophy', url: '/pages/leader/ranking' },
+  { key: 'mine', label: '我的', icon: 'user', url: '/pages/mine/mine' }
+]
 
-const tabs = computed(() => (getUser()?.role === 'TEACHER' ? TEACHER_TABS : STUDENT_TABS))
+const tabs = computed(() => {
+  const role = getUser()?.role
+  if (role === 'TEACHER') return TEACHER_TABS
+  if (role === 'LEADER') return LEADER_TABS
+  return STUDENT_TABS
+})
 
 function go(tab) {
   if (tab.key === props.current) return

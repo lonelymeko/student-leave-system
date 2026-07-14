@@ -29,6 +29,14 @@
       "style": { "navigationBarTitleText": "审批历史", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" }
     },
     {
+      "path": "pages/leader/pending",
+      "style": { "navigationBarTitleText": "二级审批", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" }
+    },
+    {
+      "path": "pages/leader/ranking",
+      "style": { "navigationBarTitleText": "请假次数排名", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" }
+    },
+    {
       "path": "pages/mine/mine",
       "style": { "navigationBarTitleText": "我的" }
     },

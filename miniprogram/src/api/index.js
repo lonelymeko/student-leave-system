@@ -20,6 +20,10 @@ export const getApprovalHistory = params => get('/approval/history', params)
 export const approve = (leaveId, data) => post(`/approval/${leaveId}`, data)
 export const cancelConfirm = leaveId => post(`/approval/${leaveId}/cancel-confirm`)
 
+// ---- 副书记端（LEADER）----
+export const getLeaderPending = params => get('/approval/leader-pending', params)
+export const getRanking = () => get('/approval/ranking')
+
 // ---- AI ----
 export const aiDraft = text => post('/ai/draft', { text })
 export const aiApprovalAdvice = leaveId => post('/ai/approval-advice', { leaveId })

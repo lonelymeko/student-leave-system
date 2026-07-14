@@ -17,6 +17,17 @@ export const getApprovalHistory = params => request.get('/approval/history', { p
 export const approve = (leaveId, data) => request.post(`/approval/${leaveId}`, data)
 export const cancelConfirm = leaveId => request.post(`/approval/${leaveId}/cancel-confirm`)
 
+// ---- 副书记端 / 二级审批 ----
+export const getLeaderPending = params => request.get('/approval/leader-pending', { params })
+export const getRanking = () => request.get('/approval/ranking')
+// 导出 Excel：返回原始 axios response（含 headers），responseType blob
+export const exportLeaves = status =>
+  request.get('/approval/leaves/export', {
+    params: status ? { status } : {},
+    responseType: 'blob',
+    rawResponse: true
+  })
+
 // ---- 管理端 ----
 export const getUsers = params => request.get('/admin/users', { params })
 export const createUser = data => request.post('/admin/users', data)

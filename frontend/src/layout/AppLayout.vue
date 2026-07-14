@@ -17,7 +17,12 @@ const MENUS = {
   ],
   TEACHER: [
     { path: '/teacher/pending', label: '待审批', icon: 'clock' },
-    { path: '/teacher/history', label: '审批历史', icon: 'history' }
+    { path: '/teacher/history', label: '审批历史', icon: 'history' },
+    { path: '/ranking', label: '请假排名', icon: 'chart' }
+  ],
+  LEADER: [
+    { path: '/leader/pending', label: '二级审批', icon: 'clock' },
+    { path: '/ranking', label: '请假排名', icon: 'chart' }
   ],
   ADMIN: [
     { path: '/admin/dashboard', label: '统计看板', icon: 'chart' },

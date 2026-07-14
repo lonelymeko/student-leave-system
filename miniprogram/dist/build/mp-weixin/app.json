@@ -7,6 +7,8 @@
     "pages/leave/detail",
     "pages/teacher/pending",
     "pages/teacher/history",
+    "pages/leader/pending",
+    "pages/leader/ranking",
     "pages/mine/mine",
     "pages/ai/chat"
   ],

@@ -173,7 +173,7 @@ async function doWxLogin() {
         </view>
       </view>
 
-      <view class="demo-hint">演示账号：student1 / teacher1（密码 123456）</view>
+      <view class="demo-hint">演示账号：student1 / teacher1 / leader1（密码 123456）</view>
     </view>
   </view>
 </template>

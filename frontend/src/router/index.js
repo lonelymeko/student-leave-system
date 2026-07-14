@@ -18,10 +18,13 @@ const routes = [
       { path: 'leader/pending', name: 'LeaderPending', component: () => import('../views/leader/LeaderPending.vue'), meta: { roles: ['LEADER'], title: '二级审批' } },
       // 请假次数排名（辅导员 / 副书记共用）
       { path: 'ranking', name: 'Ranking', component: () => import('../views/Ranking.vue'), meta: { roles: ['TEACHER', 'LEADER'], title: '请假排名' } },
+      // 消息通知（登录即可，非 ADMIN 也可）
+      { path: 'notifications', name: 'Notifications', component: () => import('../views/Notifications.vue'), meta: { roles: ['STUDENT', 'TEACHER', 'LEADER', 'ADMIN'], title: '消息通知' } },
       // 管理员
       { path: 'admin/dashboard', name: 'Dashboard', component: () => import('../views/admin/Dashboard.vue'), meta: { roles: ['ADMIN'], title: '统计看板' } },
       { path: 'admin/users', name: 'Users', component: () => import('../views/admin/Users.vue'), meta: { roles: ['ADMIN'], title: '用户管理' } },
-      { path: 'admin/leaves', name: 'AllLeaves', component: () => import('../views/admin/AllLeaves.vue'), meta: { roles: ['ADMIN'], title: '全部请假' } }
+      { path: 'admin/leaves', name: 'AllLeaves', component: () => import('../views/admin/AllLeaves.vue'), meta: { roles: ['ADMIN'], title: '全部请假' } },
+      { path: 'admin/configs', name: 'Configs', component: () => import('../views/admin/Configs.vue'), meta: { roles: ['ADMIN'], title: '系统配置' } }
     ]
   },
   { path: '/:pathMatch(.*)*', redirect: '/login' }

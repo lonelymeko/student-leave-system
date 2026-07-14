@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "消息通知",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "app-icon": "../../components/AppIcon",
+    "empty-box": "../../components/EmptyBox"
+  }
+}

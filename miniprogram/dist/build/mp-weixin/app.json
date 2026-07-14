@@ -10,7 +10,8 @@
     "pages/leader/pending",
     "pages/leader/ranking",
     "pages/mine/mine",
-    "pages/ai/chat"
+    "pages/ai/chat",
+    "pages/notify/list"
   ],
   "window": {
     "navigationStyle": "custom",

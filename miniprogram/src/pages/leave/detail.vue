@@ -1,8 +1,9 @@
 <script setup>
 // 请假详情：基本信息 + 审批时间线；学生可撤回（PENDING）/ 申请销假（APPROVED）
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { getLeaveDetail, revokeLeave, cancelApply } from '../../api'
+import { getLeaveDetail, revokeLeave, cancelApply, getLeaveAttachments } from '../../api'
+import { BASE_URL, assetUrl } from '../../utils/request'
 import AppIcon from '../../components/AppIcon.vue'
 import StatusPill from '../../components/StatusPill.vue'
 import EmptyBox from '../../components/EmptyBox.vue'
@@ -13,19 +14,84 @@ import { getUser, getToken } from '../../utils/auth'
 const detail = ref(null)
 const loading = ref(true)
 const failed = ref(false)
-const role = getUser()?.role || ''
+const me = getUser()
+const role = me?.role || ''
 let leaveId = null
+
+// 附件
+const attachments = ref([])
+const uploading = ref(false)
+
+// 是否本人（仅学生本人可上传证明）：用学号比对，学号是响应里唯一可用的身份标识
+const isOwner = computed(() =>
+  role === 'STUDENT' && !!me?.studentNo && detail.value?.studentNo === me.studentNo
+)
 
 async function load() {
   loading.value = true
   failed.value = false
   try {
     detail.value = await getLeaveDetail(leaveId)
+    loadAttachments()
   } catch (e) {
     failed.value = true
   } finally {
     loading.value = false
   }
+}
+
+async function loadAttachments() {
+  try {
+    attachments.value = await getLeaveAttachments(leaveId) || []
+  } catch (e) { attachments.value = [] }
+}
+
+const isImage = a => /\.(png|jpe?g|gif|bmp|webp)$/i.test(a.fileName || a.fileUrl || '')
+
+function previewAttachment(a) {
+  const url = assetUrl(a.fileUrl)
+  if (isImage(a)) {
+    const urls = attachments.value.filter(isImage).map(x => assetUrl(x.fileUrl))
+    uni.previewImage({ current: url, urls })
+  } else {
+    uni.showToast({ title: '暂不支持预览该类型', icon: 'none' })
+  }
+}
+
+function chooseAndUpload() {
+  if (uploading.value) return
+  uni.chooseImage({
+    count: 1,
+    sizeType: ['compressed'],
+    success: res => {
+      const filePath = res.tempFilePaths?.[0]
+      if (!filePath) return
+      doUpload(filePath)
+    }
+  })
+}
+
+function doUpload(filePath) {
+  uploading.value = true
+  const token = uni.getStorageSync('token') || ''
+  uni.uploadFile({
+    url: `${BASE_URL}/leave/${leaveId}/attachment`,
+    filePath,
+    name: 'file',
+    header: token ? { Authorization: `Bearer ${token}` } : {},
+    success: res => {
+      let body = {}
+      try { body = typeof res.data === 'string' ? JSON.parse(res.data) : res.data } catch (e) {}
+      if (res.statusCode === 200 && body && body.code === 0) {
+        uni.showToast({ title: '上传成功', icon: 'none' })
+        loadAttachments()
+      } else {
+        uni.showToast({ title: (body && body.msg) || `上传失败 (${res.statusCode})`, icon: 'none' })
+      }
+    },
+    fail: () => uni.showToast({ title: '上传失败，请检查网络', icon: 'none' }),
+    complete: () => { uploading.value = false }
+  })
 }
 
 onLoad(query => {
@@ -123,6 +189,32 @@ async function doCancelApply() {
         </view>
       </view>
 
+      <!-- 请假证明附件 -->
+      <view class="card" style="margin-bottom: 16px">
+        <view class="attach-head">
+          <text class="section-title-inline">请假证明</text>
+          <view v-if="isOwner" class="btn btn-sm btn-primary" :class="{ disabled: uploading }" @click="chooseAndUpload">
+            <AppIcon name="upload" :size="14" color="#ffffff" />
+            <text>{{ uploading ? '上传中…' : '上传证明' }}</text>
+          </view>
+        </view>
+        <view v-if="attachments.length" class="attach-list">
+          <view v-for="a in attachments" :key="a.id || a.fileUrl" class="group-row attach-row" @click="previewAttachment(a)">
+            <view class="attach-icon">
+              <AppIcon :name="isImage(a) ? 'image' : 'doc'" :size="16" color="#0071e3" />
+            </view>
+            <view class="attach-main">
+              <view class="attach-name">{{ a.fileName || '附件' }}</view>
+              <view v-if="a.uploadTime" class="attach-time">{{ fmtTime(a.uploadTime, true) }}</view>
+            </view>
+            <AppIcon v-if="isImage(a)" name="chevron-right" :size="15" color="#c7c7cc" />
+          </view>
+        </view>
+        <view v-else class="attach-empty">
+          <text>{{ isOwner ? '暂无证明，可上传病历 / 车票等图片' : '暂无请假证明' }}</text>
+        </view>
+      </view>
+
       <!-- 审批时间线 -->
       <view class="card">
         <view class="section-title">审批时间线</view>
@@ -182,6 +274,27 @@ async function doCancelApply() {
   border-top: .5px solid var(--separator);
   margin-top: 4px;
 }
+
+.attach-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px 8px;
+}
+.section-title-inline { font-size: 15px; font-weight: 700; }
+.attach-list { padding-bottom: 6px; }
+.attach-row { gap: 12px; }
+.attach-icon {
+  width: 34px; height: 34px; border-radius: 10px;
+  background: var(--accent-soft);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.attach-main { flex: 1; min-width: 0; }
+.attach-name {
+  font-size: 14px; font-weight: 500; color: var(--text-1);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.attach-time { font-size: 11.5px; color: var(--text-2); margin-top: 2px; }
+.attach-empty { padding: 4px 18px 18px; font-size: 13px; color: var(--text-2); }
 
 .timeline { padding: 8px 18px 20px; }
 .tl-item { display: flex; gap: 14px; }

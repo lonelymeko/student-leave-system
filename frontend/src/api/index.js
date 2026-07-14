@@ -28,6 +28,24 @@ export const exportLeaves = status =>
     rawResponse: true
   })
 
+// ---- 消息通知（全角色） ----
+export const getNotifications = params => request.get('/notifications', { params })
+export const getUnreadCount = () => request.get('/notifications/unread-count')
+export const readNotification = id => request.put(`/notifications/${id}/read`)
+
+// ---- 请假附件 ----
+export const uploadAttachment = (id, file) => {
+  const fd = new FormData()
+  fd.append('file', file)
+  // 不手动设 Content-Type，交由浏览器自动带 multipart boundary
+  return request.post(`/leave/${id}/attachment`, fd)
+}
+export const getAttachments = id => request.get(`/leave/${id}/attachments`)
+
+// ---- 系统配置（管理端） ----
+export const getConfigs = () => request.get('/admin/configs')
+export const updateConfig = (key, value) => request.put(`/admin/configs/${encodeURIComponent(key)}`, { value })
+
 // ---- 管理端 ----
 export const getUsers = params => request.get('/admin/users', { params })
 export const createUser = data => request.post('/admin/users', data)

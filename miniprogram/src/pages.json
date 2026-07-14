@@ -43,6 +43,10 @@
     {
       "path": "pages/ai/chat",
       "style": { "navigationBarTitleText": "AI 制度问答" }
+    },
+    {
+      "path": "pages/notify/list",
+      "style": { "navigationBarTitleText": "消息通知", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" }
     }
   ],
   "globalStyle": {

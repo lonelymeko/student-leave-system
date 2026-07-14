@@ -16,6 +16,16 @@ let BASE_URL = 'http://localhost:8080/api'
 BASE_URL = '/api'
 // #endif
 
+// 供 uni.uploadFile / uni.previewImage 拼接完整地址使用（BASE_URL 已含 /api 上下文）
+export { BASE_URL }
+// 后端返回的 fileUrl 形如 "/uploads/xxx"，静态资源实际挂在 /api 上下文下，
+// 故补全为 BASE_URL + fileUrl → H5:"/api/uploads/xxx"(vite 代理)，mp:"http://localhost:8080/api/uploads/xxx"
+export const assetUrl = u => {
+  if (!u) return ''
+  if (/^https?:\/\//.test(u)) return u
+  return BASE_URL + (u.startsWith('/') ? u : '/' + u)
+}
+
 const SILENT_CODES = [5001, 4010]
 
 /** uni.request 会把 undefined/null 值序列化成字符串 "undefined"/"null" 拼进 query，必须先清洗 */

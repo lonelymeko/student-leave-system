@@ -7,20 +7,34 @@ import TabBar from '../../components/TabBar.vue'
 import SheetModal from '../../components/SheetModal.vue'
 import { ROLE_MAP } from '../../utils/constants'
 import { getUser, getToken, clearAuth, isWxLinked, setWxLinked } from '../../utils/auth'
+import { getUnreadCount } from '../../api'
 
 const user = ref(null)
 const wxLinked = ref(false)
+const unread = ref(0)
+
+async function loadUnread() {
+  try {
+    const data = await getUnreadCount()
+    unread.value = data?.count || 0
+  } catch (e) { unread.value = 0 }
+}
 
 onShow(() => {
   if (!getToken()) { uni.reLaunch({ url: '/pages/login/login' }); return }
   user.value = getUser()
   wxLinked.value = isWxLinked()
+  loadUnread()
 })
 
 const roleInfo = r => ROLE_MAP[r] || { text: r, pill: 'pill-gray' }
 
 function goChat() {
   uni.navigateTo({ url: '/pages/ai/chat' })
+}
+
+function goNotify() {
+  uni.navigateTo({ url: '/pages/notify/list' })
 }
 
 const showLogout = ref(false)
@@ -71,6 +85,15 @@ function doLogout() {
 
       <!-- 功能入口 -->
       <view class="card" style="margin-top: 16px">
+        <view class="group-row entry-row" @click="goNotify">
+          <view class="entry-badge badge-notify"><AppIcon name="bell" :size="16" color="#ffffff" /></view>
+          <view class="entry-main">
+            <view class="entry-title">消息通知</view>
+            <view class="entry-desc">请假审批结果与系统消息</view>
+          </view>
+          <view v-if="unread > 0" class="unread-badge">{{ unread > 99 ? '99+' : unread }}</view>
+          <AppIcon name="chevron-right" :size="16" color="#c7c7cc" />
+        </view>
         <view class="group-row entry-row" @click="goChat">
           <view class="entry-badge"><AppIcon name="sparkle" :size="16" color="#ffffff" /></view>
           <view class="entry-main">
@@ -133,9 +156,20 @@ function doLogout() {
   box-shadow: 0 4px 12px rgba(90, 100, 230, .35);
   flex-shrink: 0;
 }
+.badge-notify { background: linear-gradient(135deg, #0071e3, #30b0c7); box-shadow: 0 4px 12px rgba(0, 113, 227, .35); }
 .entry-main { flex: 1; min-width: 0; }
 .entry-title { font-size: 15px; font-weight: 600; }
 .entry-desc { font-size: 12px; color: var(--text-2); }
+.unread-badge {
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 9px;
+  background: var(--red);
+  color: #ffffff;
+  font-size: 11px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  margin-right: 6px;
+  box-sizing: border-box;
+}
 
 .logout-card { margin-top: 16px; }
 .logout-row { justify-content: center; gap: 8px; }

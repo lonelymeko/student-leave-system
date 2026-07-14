@@ -1,14 +1,22 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useNotifyStore } from '../stores/notify'
 import Icon from '../components/Icon.vue'
 import AiAssistant from '../components/AiAssistant.vue'
 import { ROLE_MAP } from '../utils/constants'
 
 const auth = useAuthStore()
+const notify = useNotifyStore()
 const route = useRoute()
 const router = useRouter()
+
+// 登录后拉未读数并 30s 轮询
+onMounted(() => notify.startPolling(30000))
+onUnmounted(() => notify.stopPolling())
+
+function goNotifications() { router.push('/notifications') }
 
 const MENUS = {
   STUDENT: [
@@ -27,7 +35,8 @@ const MENUS = {
   ADMIN: [
     { path: '/admin/dashboard', label: '统计看板', icon: 'chart' },
     { path: '/admin/users', label: '用户管理', icon: 'users' },
-    { path: '/admin/leaves', label: '全部请假', icon: 'list' }
+    { path: '/admin/leaves', label: '全部请假', icon: 'list' },
+    { path: '/admin/configs', label: '系统配置', icon: 'settings' }
   ]
 }
 
@@ -77,11 +86,25 @@ function logout() {
     </aside>
 
     <main class="main">
-      <router-view v-slot="{ Component }">
-        <Transition name="page" mode="out-in">
-          <component :is="Component" :key="route.fullPath" />
-        </Transition>
-      </router-view>
+      <div class="topbar">
+        <button
+          class="bell-btn"
+          type="button"
+          title="消息通知"
+          :class="{ active: route.path === '/notifications' }"
+          @click="goNotifications"
+        >
+          <Icon name="bell" :size="19" />
+          <span v-if="notify.unread > 0" class="badge">{{ notify.unread > 99 ? '99+' : notify.unread }}</span>
+        </button>
+      </div>
+      <div class="main-inner">
+        <router-view v-slot="{ Component }">
+          <Transition name="page" mode="out-in">
+            <component :is="Component" :key="route.fullPath" />
+          </Transition>
+        </router-view>
+      </div>
     </main>
 
     <AiAssistant />
@@ -158,6 +181,50 @@ function logout() {
 .main {
   flex: 1;
   overflow-y: auto;
+  position: relative;
+}
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 56px;
+  padding: 0 40px;
+  background: var(--surface);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-bottom: .5px solid var(--separator);
+}
+.bell-btn {
+  position: relative;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, .05);
+  color: var(--text-1);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s ease-out;
+}
+.bell-btn:hover { background: rgba(0, 0, 0, .09); }
+.bell-btn.active { background: var(--accent); color: #fff; }
+.badge {
+  position: absolute;
+  top: -3px; right: -3px;
+  min-width: 17px; height: 17px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--red);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 17px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.main-inner {
   padding: 36px 40px 60px;
 }
 </style>

@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getLeaveDetail, revokeLeave, cancelApply } from '../../api'
+import { getLeaveDetail, revokeLeave, cancelApply, uploadAttachment, getAttachments } from '../../api'
 import { useAuthStore } from '../../stores/auth'
 import Icon from '../../components/Icon.vue'
 import StatusPill from '../../components/StatusPill.vue'
@@ -24,6 +24,7 @@ async function load() {
   failed.value = false
   try {
     detail.value = await getLeaveDetail(route.params.id)
+    loadAttachments()
   } catch (e) {
     failed.value = true
   } finally {
@@ -31,6 +32,50 @@ async function load() {
   }
 }
 onMounted(load)
+
+// ---- 附件 ----
+const attachments = ref([])
+const uploading = ref(false)
+const fileInput = ref(null)
+
+// 仅学生本人可上传证明（学生只能经「我的请假」进入自己的单，后端亦校验归属）
+const canUpload = computed(() => auth.role === 'STUDENT' && !!detail.value)
+
+async function loadAttachments() {
+  // 详情 VO 已内嵌 attachments，先用它；上传后再单独拉一次保证最新
+  if (Array.isArray(detail.value?.attachments)) {
+    attachments.value = detail.value.attachments
+    return
+  }
+  try {
+    attachments.value = (await getAttachments(route.params.id)) || []
+  } catch (e) { attachments.value = [] }
+}
+
+function pickFile() { fileInput.value?.click() }
+
+async function onFileChange(e) {
+  const file = e.target.files?.[0]
+  e.target.value = '' // 允许再次选同一文件
+  if (!file) return
+  if (file.size > 10 * 1024 * 1024) { toast.warning('文件不能超过 10MB'); return }
+  uploading.value = true
+  try {
+    await uploadAttachment(detail.value.id, file)
+    toast.success('证明已上传')
+    // 上传后强制从接口拉最新列表（不用内嵌的旧数据）
+    attachments.value = (await getAttachments(route.params.id)) || []
+  } catch (err) { /* 已提示 */ } finally { uploading.value = false }
+}
+
+// 静态文件访问：fileUrl 形如 /uploads/xxx，后端映射在 /api 下
+const fileHref = url => (url ? `/api${url}` : '#')
+function fmtSize(bytes) {
+  if (!bytes && bytes !== 0) return ''
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / 1024 / 1024).toFixed(1) + ' MB'
+}
 
 const actionInfo = a => ACTION_MAP[a] || { text: a, color: 'var(--text-2)' }
 
@@ -94,6 +139,34 @@ async function doCancelApply() {
             <div class="group-row info-row" v-if="detail.approverName"><span class="k">审批人</span><span class="v">{{ detail.approverName }}</span></div>
             <div class="group-row info-row" v-if="detail.approveComment"><span class="k">审批意见</span><span class="v">{{ detail.approveComment }}</span></div>
             <div class="group-row info-row" v-if="detail.cancelNote"><span class="k">销假说明</span><span class="v">{{ detail.cancelNote }}</span></div>
+          </div>
+
+          <!-- 证明附件 -->
+          <div class="attach-block">
+            <div class="attach-head">
+              <span class="attach-title"><Icon name="paperclip" :size="15" />证明附件</span>
+              <button v-if="canUpload" class="btn btn-secondary btn-sm" type="button" :disabled="uploading" @click="pickFile">
+                <Icon name="upload" :size="14" />{{ uploading ? '上传中…' : '上传证明' }}
+              </button>
+              <input ref="fileInput" type="file" style="display:none" accept="image/*,.pdf" @change="onFileChange" />
+            </div>
+            <div v-if="attachments.length" class="attach-list">
+              <a
+                v-for="att in attachments"
+                :key="att.id"
+                class="attach-item"
+                :href="fileHref(att.fileUrl)"
+                target="_blank"
+                rel="noopener"
+              >
+                <span class="attach-icon"><Icon name="doc" :size="16" /></span>
+                <span class="attach-name">{{ att.fileName }}</span>
+                <span class="attach-size">{{ fmtSize(att.fileSize) }}</span>
+              </a>
+            </div>
+            <p v-else class="attach-empty">
+              {{ canUpload ? '病假请上传医院诊断证明（图片或 PDF）' : '暂无附件' }}
+            </p>
           </div>
 
           <div v-if="auth.role === 'STUDENT' && ['PENDING', 'APPROVED'].includes(detail.status)" class="detail-actions">
@@ -180,6 +253,28 @@ async function doCancelApply() {
   padding: 14px 20px 18px;
   border-top: .5px solid var(--separator);
 }
+
+.attach-block {
+  padding: 14px 20px 18px;
+  border-top: .5px solid var(--separator);
+}
+.attach-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.attach-title { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; font-weight: 600; color: var(--text-1); }
+.attach-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.attach-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, .035);
+  text-decoration: none;
+  color: var(--text-1);
+  transition: background .15s ease-out;
+}
+.attach-item:hover { background: var(--accent-soft); }
+.attach-icon { color: var(--accent); display: flex; flex-shrink: 0; }
+.attach-name { font-size: 13.5px; font-weight: 500; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.attach-size { font-size: 12px; color: var(--text-2); flex-shrink: 0; }
+.attach-empty { font-size: 12.5px; color: var(--text-2); margin-top: 10px; }
 
 .timeline { padding: 10px 20px 22px; }
 .tl-item { display: flex; gap: 14px; }

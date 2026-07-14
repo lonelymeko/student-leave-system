@@ -24,6 +24,14 @@ export const cancelConfirm = leaveId => post(`/approval/${leaveId}/cancel-confir
 export const getLeaderPending = params => get('/approval/leader-pending', params)
 export const getRanking = () => get('/approval/ranking')
 
+// ---- 消息通知 ----
+export const getNotifications = params => get('/notifications', params)
+export const getUnreadCount = () => get('/notifications/unread-count')
+export const readNotification = id => put(`/notifications/${id}/read`)
+
+// ---- 请假附件 ----
+export const getLeaveAttachments = id => get(`/leave/${id}/attachments`)
+
 // ---- AI ----
 export const aiDraft = text => post('/ai/draft', { text })
 export const aiApprovalAdvice = leaveId => post('/ai/approval-advice', { leaveId })

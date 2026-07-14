@@ -96,3 +96,83 @@ INSERT INTO approval_record (leave_id, operator_id, action, comment, create_time
 (9,4,'SUBMIT','腿部骨折手术后需居家休养，附诊断证明','2026-06-28 16:00:00'),
 (9,2,'APPROVE','同意，好好养伤，课程资料已安排同学共享','2026-06-28 17:00:00'),
 (10,6,'SUBMIT','需回户籍地办理身份证补办手续','2026-07-06 10:00:00');
+
+-- ================================================================
+-- 增量子系统表（迭代二：类型字典/配置/AI记录/通知/操作日志/附件）
+-- ================================================================
+-- 请假类型字典表
+CREATE TABLE IF NOT EXISTS leave_type (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  type_code  VARCHAR(20) NOT NULL UNIQUE COMMENT '类型编码',
+  type_name  VARCHAR(30) NOT NULL COMMENT '类型名称',
+  max_days   INT COMMENT '单次最大天数',
+  need_proof TINYINT DEFAULT 0 COMMENT '是否需证明',
+  sort INT DEFAULT 0, enabled TINYINT DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='请假类型字典表';
+
+-- 系统配置表
+CREATE TABLE IF NOT EXISTS sys_config (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  config_key   VARCHAR(60) NOT NULL UNIQUE COMMENT '配置键',
+  config_value VARCHAR(500) COMMENT '配置值',
+  description  VARCHAR(120) COMMENT '说明',
+  update_time  DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统配置表';
+
+-- AI 对话记录表
+CREATE TABLE IF NOT EXISTS ai_chat_log (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id  BIGINT NOT NULL COMMENT '提问用户id',
+  question VARCHAR(500) NOT NULL COMMENT '问题',
+  answer   TEXT COMMENT 'AI回复',
+  provider VARCHAR(30) COMMENT '模型供应商',
+  create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_user (user_id),
+  CONSTRAINT fk_ai_user FOREIGN KEY (user_id) REFERENCES sys_user(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI对话记录表';
+
+-- 消息通知表
+CREATE TABLE IF NOT EXISTS sys_notification (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id  BIGINT NOT NULL COMMENT '接收用户id',
+  title    VARCHAR(80) NOT NULL COMMENT '标题',
+  content  VARCHAR(255) COMMENT '内容',
+  biz_type VARCHAR(30) COMMENT '业务类型',
+  biz_id   BIGINT COMMENT '关联业务id',
+  is_read  TINYINT DEFAULT 0 COMMENT '是否已读',
+  create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_user (user_id),
+  CONSTRAINT fk_notify_user FOREIGN KEY (user_id) REFERENCES sys_user(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='消息通知表';
+
+-- 操作日志表
+CREATE TABLE IF NOT EXISTS sys_operation_log (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id   BIGINT COMMENT '操作用户id',
+  operation VARCHAR(80) COMMENT '操作描述',
+  method    VARCHAR(120) COMMENT '请求方法/路径',
+  ip        VARCHAR(40) COMMENT '来源IP',
+  create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='操作日志表';
+
+-- 请假附件表
+CREATE TABLE IF NOT EXISTS leave_attachment (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  leave_id  BIGINT NOT NULL COMMENT '请假单id',
+  file_name VARCHAR(120) NOT NULL COMMENT '文件名',
+  file_url  VARCHAR(255) NOT NULL COMMENT '存储地址',
+  file_size BIGINT COMMENT '大小(字节)',
+  file_type VARCHAR(30) COMMENT '类型',
+  upload_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+  KEY idx_leave (leave_id),
+  CONSTRAINT fk_att_leave FOREIGN KEY (leave_id) REFERENCES leave_request(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='请假附件表';
+
+-- 字典/配置种子
+INSERT INTO leave_type (type_code, type_name, max_days, need_proof, sort) VALUES
+('SICK','病假',15,1,1),('PERSONAL','事假',7,0,2),('EMERGENCY','急事假',3,0,3),('OTHER','其他',5,0,4);
+INSERT INTO sys_config (config_key, config_value, description) VALUES
+('ai.provider','auto','AI供应商 auto/openai/anthropic'),
+('ai.openai.model','gpt-4o','OpenAI默认模型'),
+('leave.policy','病假超过3天需二级及以上医院诊断证明；事假每学期累计不超过7天；请假期满当天须销假。','请假制度');

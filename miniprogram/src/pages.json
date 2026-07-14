@@ -47,6 +47,22 @@
     {
       "path": "pages/notify/list",
       "style": { "navigationBarTitleText": "消息通知", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" }
+    },
+    {
+      "path": "pages/admin/dashboard",
+      "style": { "navigationBarTitleText": "统计看板", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" }
+    },
+    {
+      "path": "pages/admin/users",
+      "style": { "navigationBarTitleText": "用户管理", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" }
+    },
+    {
+      "path": "pages/admin/configs",
+      "style": { "navigationBarTitleText": "系统配置", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" }
+    },
+    {
+      "path": "pages/admin/leaves",
+      "style": { "navigationBarTitleText": "全部请假", "enablePullDownRefresh": true, "backgroundTextStyle": "dark" }
     }
   ],
   "globalStyle": {

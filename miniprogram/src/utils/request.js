@@ -90,3 +90,4 @@ export function request(method, url, data) {
 export const get = (url, params) => request('GET', url, params)
 export const post = (url, data) => request('POST', url, data)
 export const put = (url, data) => request('PUT', url, data)
+export const del = (url, data) => request('DELETE', url, data)

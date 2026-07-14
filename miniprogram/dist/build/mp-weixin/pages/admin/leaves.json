@@ -1,0 +1,12 @@
+{
+  "navigationBarTitleText": "全部请假",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "app-icon": "../../components/AppIcon",
+    "status-pill": "../../components/StatusPill",
+    "segmented-bar": "../../components/SegmentedBar",
+    "empty-box": "../../components/EmptyBox",
+    "tab-bar": "../../components/TabBar"
+  }
+}

@@ -27,11 +27,18 @@ const LEADER_TABS = [
   { key: 'ranking', label: '排名', icon: 'trophy', url: '/pages/leader/ranking' },
   { key: 'mine', label: '我的', icon: 'user', url: '/pages/mine/mine' }
 ]
+const ADMIN_TABS = [
+  { key: 'admin-dashboard', label: '统计', icon: 'chart', url: '/pages/admin/dashboard' },
+  { key: 'admin-users', label: '用户', icon: 'users', url: '/pages/admin/users' },
+  { key: 'admin-configs', label: '配置', icon: 'gear', url: '/pages/admin/configs' },
+  { key: 'mine', label: '我的', icon: 'user', url: '/pages/mine/mine' }
+]
 
 const tabs = computed(() => {
   const role = getUser()?.role
   if (role === 'TEACHER') return TEACHER_TABS
   if (role === 'LEADER') return LEADER_TABS
+  if (role === 'ADMIN') return ADMIN_TABS
   return STUDENT_TABS
 })
 

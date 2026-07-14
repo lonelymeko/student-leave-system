@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "统计看板",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "app-icon": "../../components/AppIcon",
+    "empty-box": "../../components/EmptyBox",
+    "tab-bar": "../../components/TabBar"
+  }
+}

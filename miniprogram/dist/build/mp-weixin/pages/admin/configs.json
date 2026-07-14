@@ -1,0 +1,11 @@
+{
+  "navigationBarTitleText": "系统配置",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "app-icon": "../../components/AppIcon",
+    "empty-box": "../../components/EmptyBox",
+    "tab-bar": "../../components/TabBar",
+    "sheet-modal": "../../components/SheetModal"
+  }
+}

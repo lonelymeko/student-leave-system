@@ -35,10 +35,6 @@ async function probeWx() {
 }
 
 function enter(user, viaWx) {
-  if (user.role === 'ADMIN') {
-    uni.showToast({ title: '管理员请使用网页端登录', icon: 'none' })
-    return false
-  }
   setWxLinked(!!viaWx)
   uni.showToast({ title: `欢迎回来，${user.realName || user.username}`, icon: 'none' })
   uni.reLaunch({ url: homePath(user.role) })
@@ -55,10 +51,6 @@ async function submit() {
   loading.value = true
   try {
     const d = await login({ username: username.value.trim(), password: password.value })
-    if (d?.user?.role === 'ADMIN') {
-      uni.showToast({ title: '管理员请使用网页端登录', icon: 'none' })
-      return
-    }
     setAuth(d.token, d.user)
     enter(d.user, false)
   } catch (e) {
@@ -80,10 +72,6 @@ async function doWxLogin() {
       return
     }
     const d = await wxLogin(code)
-    if (d?.user?.role === 'ADMIN') {
-      uni.showToast({ title: '管理员请使用网页端登录', icon: 'none' })
-      return
-    }
     setAuth(d.token, d.user)
     enter(d.user, true)
   } catch (e) {
@@ -173,7 +161,7 @@ async function doWxLogin() {
         </view>
       </view>
 
-      <view class="demo-hint">演示账号：student1 / teacher1 / leader1（密码 123456）</view>
+      <view class="demo-hint">演示账号：student1 / teacher1 / leader1（密码 123456）{{ '\n' }}管理员 admin（密码 admin123）</view>
     </view>
   </view>
 </template>
@@ -233,5 +221,5 @@ async function doWxLogin() {
 }
 .input.with-icon { padding-left: 38px; }
 
-.demo-hint { margin-top: 22px; font-size: 11.5px; color: var(--text-2); text-align: center; line-height: 1.7; }
+.demo-hint { margin-top: 22px; font-size: 11.5px; color: var(--text-2); text-align: center; line-height: 1.7; white-space: pre-line; }
 </style>

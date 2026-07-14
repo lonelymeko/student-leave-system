@@ -1,0 +1,11 @@
+{
+  "navigationBarTitleText": "用户管理",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "app-icon": "../../components/AppIcon",
+    "empty-box": "../../components/EmptyBox",
+    "tab-bar": "../../components/TabBar",
+    "sheet-modal": "../../components/SheetModal"
+  }
+}

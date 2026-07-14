@@ -11,7 +11,11 @@
     "pages/leader/ranking",
     "pages/mine/mine",
     "pages/ai/chat",
-    "pages/notify/list"
+    "pages/notify/list",
+    "pages/admin/dashboard",
+    "pages/admin/users",
+    "pages/admin/configs",
+    "pages/admin/leaves"
   ],
   "window": {
     "navigationStyle": "custom",

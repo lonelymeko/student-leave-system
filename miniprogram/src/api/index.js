@@ -1,4 +1,4 @@
-import { get, post, put } from '../utils/request'
+import { get, post, put, del } from '../utils/request'
 
 // ---- 认证 ----
 export const login = data => post('/auth/login', data)
@@ -31,6 +31,18 @@ export const readNotification = id => put(`/notifications/${id}/read`)
 
 // ---- 请假附件 ----
 export const getLeaveAttachments = id => get(`/leave/${id}/attachments`)
+
+// ---- 管理员端（ADMIN）----
+export const getStatsOverview = () => get('/admin/stats/overview')
+export const getUsers = params => get('/admin/users', params)
+export const createUser = data => post('/admin/users', data)
+export const updateUser = (id, data) => put(`/admin/users/${id}`, data)
+export const resetPassword = (id, password) => put(`/admin/users/${id}/password`, { password })
+export const deleteUser = id => del(`/admin/users/${id}`)
+export const getTeachers = () => get('/admin/teachers')
+export const getAllLeaves = params => get('/admin/leaves', params)
+export const getConfigs = () => get('/admin/configs')
+export const updateConfig = (key, value) => put(`/admin/configs/${encodeURIComponent(key)}`, { value })
 
 // ---- AI ----
 export const aiDraft = text => post('/ai/draft', { text })
